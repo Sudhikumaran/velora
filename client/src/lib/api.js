@@ -1,6 +1,7 @@
 import { useAuthStore } from "../store/authStore.js";
 
-const base = "";
+const raw = import.meta.env.VITE_API_BASE_URL;
+const base = typeof raw === "string" ? raw.replace(/\/$/, "") : "";
 
 async function request(path, options = {}) {
   const token = useAuthStore.getState().token;

@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { validateBody } from "../middleware/validate.js";
+import { logger } from "../middleware/logger.js";
+import { isMailConfigured, sendPasswordResetEmail } from "../lib/mail.js";
 import {
   registerSchema,
   loginSchema,
@@ -80,20 +82,34 @@ router.post("/forgot-password", validateBody(forgotPasswordSchema), async (req, 
   try {
     const { email } = req.validBody;
     const user = await User.findOne({ email: email.toLowerCase() });
+    const dev = process.env.NODE_ENV !== "production";
+
     if (user) {
       const raw = crypto.randomBytes(32).toString("hex");
       const hash = crypto.createHash("sha256").update(raw).digest("hex");
       user.passwordResetToken = hash;
       user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
       await user.save();
-      const base = (process.env.CLIENT_URL || "http://localhost:5173").replace(/\/$/, "");
-      const link = `${base}/reset-password?token=${encodeURIComponent(raw)}`;
-      if (process.env.NODE_ENV !== "production") {
+      const clientBase = (process.env.CLIENT_URL || "http://localhost:5173").split(",")[0].trim().replace(/\/$/, "");
+      const link = `${clientBase}/reset-password?token=${encodeURIComponent(raw)}`;
+
+      if (dev) {
         console.log(`[Velaro] Password reset link for ${email}: ${link}`);
+      } else if (isMailConfigured()) {
+        try {
+          await sendPasswordResetEmail(user.email, link);
+        } catch {
+          logger.error("Password reset email could not be sent; user should use forgot-password again or contact support");
+        }
+      } else {
+        logger.error("SMTP not configured — password reset link was not emailed");
       }
     }
+
     res.json({
-      message: "If an account exists for that email, you can use the reset link (check server logs in development).",
+      message: dev
+        ? "If an account exists for that email, use the reset link from the server console log."
+        : "If an account exists for that email, you will receive password reset instructions shortly.",
     });
   } catch (e) {
     next(e);

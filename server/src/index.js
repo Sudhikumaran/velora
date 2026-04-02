@@ -1,9 +1,11 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { httpLogger, logger } from "./middleware/logger.js";
 import { apiLimiter, authLimiter } from "./middleware/rateLimit.js";
+import { assertProductionConfig } from "./lib/assertConfig.js";
 import authRoutes from "./routes/auth.js";
 import accountRoutes from "./routes/accounts.js";
 import transactionRoutes from "./routes/transactions.js";
@@ -20,14 +22,28 @@ import importRoutes from "./routes/import.js";
 import integrationsRoutes from "./routes/integrations.js";
 
 dotenv.config();
+assertProductionConfig();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+if (process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY === "true") {
+  app.set("trust proxy", 1);
+}
+
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+app.use(helmet());
 app.use(httpLogger);
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      callback(null, allowedOrigins.includes(origin));
+    },
     credentials: true,
   })
 );
@@ -50,7 +66,13 @@ app.use("/api/goals", goalsRoutes);
 app.use("/api/import", importRoutes);
 app.use("/api/integrations", integrationsRoutes);
 
-app.get("/api/health", (_, res) => res.json({ ok: true }));
+app.get("/api/health", (_req, res) => {
+  const dbUp = mongoose.connection.readyState === 1;
+  res.status(dbUp ? 200 : 503).json({
+    ok: dbUp,
+    db: dbUp ? "up" : "down",
+  });
+});
 
 app.use((err, _req, res, _next) => {
   logger.error({ err }, err.message);
