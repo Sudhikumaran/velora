@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { GoogleLogin } from "@react-oauth/google";
 import toast from "react-hot-toast";
 import { api } from "../lib/api.js";
 import { useAuthStore } from "../store/authStore.js";
+
+const hasGoogle = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -92,6 +95,42 @@ export default function Register() {
             {loading ? "Creating…" : "Register"}
           </button>
         </form>
+        {hasGoogle && (
+          <>
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center" aria-hidden>
+                <div className="w-full border-t border-slate-200" />
+              </div>
+              <p className="relative text-center text-xs text-slate-500">
+                <span className="bg-white/95 dark:bg-slate-900/95 px-2">or</span>
+              </p>
+            </div>
+            <div className="flex justify-center">
+              <GoogleLogin
+                text="signup_with"
+                shape="pill"
+                size="large"
+                width="100%"
+                theme="outline"
+                onSuccess={async (cred) => {
+                  if (!cred.credential) return;
+                  setLoading(true);
+                  try {
+                    const data = await api.auth.google({ credential: cred.credential });
+                    setAuth(data.token, data.user);
+                    toast.success("Signed in with Google");
+                    nav("/", { replace: true });
+                  } catch (err) {
+                    toast.error(err.message || "Google sign-up failed");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                onError={() => toast.error("Google sign-in was cancelled or failed")}
+              />
+            </div>
+          </>
+        )}
         <p className="text-center text-sm mt-3">
           <Link className="text-accent-sky hover:underline" to="/forgot-password">
             Forgot password?

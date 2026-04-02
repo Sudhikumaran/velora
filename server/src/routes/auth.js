@@ -2,6 +2,7 @@ import { Router } from "express";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
 import User from "../models/User.js";
 import { validateBody } from "../middleware/validate.js";
 import { logger } from "../middleware/logger.js";
@@ -11,6 +12,7 @@ import {
   loginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  googleAuthSchema,
 } from "../validation/schemas.js";
 
 const router = Router();
@@ -57,7 +59,9 @@ router.post("/login", validateBody(loginSchema), async (req, res, next) => {
       "+password"
     );
     if (!user?.password) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({
+        message: "This account uses Google sign-in. Use “Continue with Google” instead.",
+      });
     }
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) {
@@ -137,10 +141,56 @@ router.post("/reset-password", validateBody(resetPasswordSchema), async (req, re
   }
 });
 
-router.post("/google-placeholder", (_req, res) => {
-  res.status(501).json({
-    message: "Google OAuth not configured. Wire GOOGLE_CLIENT_ID and callback.",
-  });
+/** Google Identity Services: verify ID token, link or create user. */
+router.post("/google", validateBody(googleAuthSchema), async (req, res, next) => {
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
+    if (!clientId) {
+      return res.status(503).json({ message: "Google sign-in is not configured on the server" });
+    }
+    const oauth = new OAuth2Client(clientId);
+    const ticket = await oauth.verifyIdToken({
+      idToken: req.validBody.credential,
+      audience: clientId,
+    });
+    const payload = ticket.getPayload();
+    if (!payload?.email) {
+      return res.status(400).json({ message: "Google did not return an email" });
+    }
+    const email = String(payload.email).toLowerCase();
+    const googleId = payload.sub;
+    const picture = payload.picture || undefined;
+    const displayName = (payload.name || email.split("@")[0] || "User").slice(0, 120);
+
+    let user = await User.findOne({ $or: [{ googleId }, { email }] });
+    if (!user) {
+      user = await User.create({
+        name: displayName,
+        email,
+        googleId,
+        picture,
+        currency: "INR",
+      });
+    } else {
+      if (!user.googleId) user.googleId = googleId;
+      if (picture) user.picture = picture;
+      await user.save();
+    }
+
+    const token = signToken(user._id.toString());
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        currency: user.currency,
+      },
+    });
+  } catch (e) {
+    logger.error(e, "Google auth verify failed");
+    next(e);
+  }
 });
 
 export default router;
