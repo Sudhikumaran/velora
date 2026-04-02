@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { api } from "../lib/api.js";
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState("");
+  const { state } = useLocation();
+  const [email, setEmail] = useState(() => (typeof state?.email === "string" ? state.email : ""));
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e) {

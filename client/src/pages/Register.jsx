@@ -92,7 +92,12 @@ export default function Register() {
             {loading ? "Creating…" : "Register"}
           </button>
         </form>
-        <p className="text-center text-sm text-slate-600 mt-6">
+        <p className="text-center text-sm mt-3">
+          <Link className="text-accent-sky hover:underline" to="/forgot-password">
+            Forgot password?
+          </Link>
+        </p>
+        <p className="text-center text-sm text-slate-600 mt-4">
           Already have an account?{" "}
           <Link className="text-accent-mint hover:underline" to="/login">
             Sign in

@@ -14,7 +14,7 @@ const links = [
   { to: "/subscriptions", label: "Subscriptions", icon: "↻" },
   { to: "/goals", label: "Goals", icon: "◎" },
   { to: "/calendar", label: "Calendar", icon: "▦" },
-  { to: "/settings", label: "Settings", icon: "⚙" },
+  { to: "/settings", label: "Profile & settings", icon: "👤" },
 ];
 
 export default function Sidebar({ mobile, onNavigate }) {

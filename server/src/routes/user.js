@@ -1,5 +1,8 @@
 import { Router } from "express";
+import bcrypt from "bcryptjs";
 import { requireAuth } from "../middleware/auth.js";
+import { validateBody } from "../middleware/validate.js";
+import { changePasswordSchema } from "../validation/schemas.js";
 import User from "../models/User.js";
 import Account from "../models/Account.js";
 import Transaction from "../models/Transaction.js";
@@ -28,6 +31,23 @@ router.patch("/me", async (req, res, next) => {
       email: u.email,
       currency: u.currency,
     });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post("/me/password", validateBody(changePasswordSchema), async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.validBody;
+    const u = await User.findById(req.userId).select("+password");
+    if (!u?.password) {
+      return res.status(400).json({ message: "Password sign-in is not set for this account" });
+    }
+    const ok = await bcrypt.compare(currentPassword, u.password);
+    if (!ok) return res.status(401).json({ message: "Current password is incorrect" });
+    u.password = await bcrypt.hash(newPassword, 10);
+    await u.save();
+    res.json({ message: "Password updated. Use the new password next time you sign in." });
   } catch (e) {
     next(e);
   }

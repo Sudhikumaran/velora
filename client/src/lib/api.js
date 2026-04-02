@@ -136,6 +136,8 @@ export const api = {
   user: {
     patchMe: (body) =>
       request("/api/user/me", { method: "PATCH", body: JSON.stringify(body) }),
+    changePassword: (body) =>
+      request("/api/user/me/password", { method: "POST", body: JSON.stringify(body) }),
     exportData: () => request("/api/user/export"),
   },
   goals: {

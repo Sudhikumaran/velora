@@ -25,10 +25,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
-      <Route
-        path="/forgot-password"
-        element={token ? <Navigate to="/" replace /> : <ForgotPassword />}
-      />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/register"

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/authStore.js";
 import { useThemeStore } from "../store/themeStore.js";
 import { api } from "../lib/api.js";
@@ -140,6 +141,12 @@ export default function TopBar({ onMenu }) {
             </>
           )}
         </div>
+        <Link
+          to="/settings"
+          className={`hidden sm:inline-flex text-sm px-4 py-2 rounded-xl border shadow-sm font-medium no-underline ${iconBtn}`}
+        >
+          Profile
+        </Link>
         <button
           type="button"
           onClick={() => {
