@@ -25,7 +25,8 @@ dotenv.config();
 assertProductionConfig();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
+const HOST = process.env.HOST || "0.0.0.0";
 
 if (process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY === "true") {
   app.set("trust proxy", 1);
@@ -84,8 +85,8 @@ app.use((err, _req, res, _next) => {
 mongoose
   .connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/velaro")
   .then(() => {
-    app.listen(PORT, () => {
-      logger.info(`Velaro API on ${PORT}`);
+    app.listen(PORT, HOST, () => {
+      logger.info(`Velaro API on http://${HOST}:${PORT}`);
     });
   })
   .catch((e) => {
