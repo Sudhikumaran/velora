@@ -1,0 +1,15 @@
+# Render Blueprint — Web Service for the API only.
+# Set secrets in the dashboard: MONGODB_URI, JWT_SECRET, CLIENT_URL, SMTP_*, etc.
+# Do not commit secrets. Render injects PORT automatically — omit PORT in env if possible.
+services:
+  - type: web
+    name: velaro-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
