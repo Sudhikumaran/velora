@@ -1,5 +1,5 @@
 # Render Blueprint — Web Service for the API only.
-# Set secrets in the dashboard: MONGODB_URI, JWT_SECRET, CLIENT_URL, SMTP_*, etc.
+# Set secrets in the dashboard: MONGODB_URI, CLERK_SECRET_KEY, CLIENT_URL, SMTP_*, etc.
 # Do not commit secrets. Render injects PORT automatically — omit PORT in env if possible.
 services:
   - type: web
