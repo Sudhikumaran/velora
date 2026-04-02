@@ -37,13 +37,31 @@ const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
   .map((s) => s.trim())
   .filter(Boolean);
 
+const vercelPreviewCors =
+  process.env.CORS_ALLOW_VERCEL_PREVIEWS === "1" ||
+  process.env.CORS_ALLOW_VERCEL_PREVIEWS === "true";
+
+function isAllowedCorsOrigin(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  if (vercelPreviewCors) {
+    try {
+      const u = new URL(origin);
+      if (u.protocol === "https:" && u.hostname.endsWith(".vercel.app")) return true;
+    } catch {
+      /* ignore */
+    }
+  }
+  return false;
+}
+
 app.use(helmet());
 app.use(httpLogger);
 app.use(
   cors({
     origin(origin, callback) {
       if (!origin) return callback(null, true);
-      callback(null, allowedOrigins.includes(origin));
+      callback(null, isAllowedCorsOrigin(origin));
     },
     credentials: true,
   })
