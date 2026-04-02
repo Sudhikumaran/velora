@@ -17,6 +17,21 @@ import Goal from "../models/Goal.js";
 const router = Router();
 router.use(requireAuth);
 
+router.get("/me", async (req, res, next) => {
+  try {
+    const u = await User.findById(req.userId).select("-password");
+    if (!u) return res.status(404).json({ message: "Not found" });
+    res.json({
+      id: u._id,
+      name: u.name,
+      email: u.email,
+      currency: u.currency,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.patch("/me", async (req, res, next) => {
   try {
     const { currency, name } = req.body;

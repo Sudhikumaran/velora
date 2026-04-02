@@ -50,6 +50,3 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(6).max(200),
 });
 
-export const googleAuthSchema = z.object({
-  credential: z.string().min(20),
-});

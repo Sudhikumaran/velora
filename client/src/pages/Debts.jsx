@@ -13,6 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { useAuth } from "@clerk/clerk-react";
 import { api } from "../lib/api.js";
 import { buildDebtSummary } from "../lib/debtSummary.js";
 import { formatMoney, formatDateDMY } from "../lib/format.js";
@@ -22,7 +23,8 @@ import { useThemeStore } from "../store/themeStore.js";
 const PIE_COLORS = ["#fb7185", "#34d399"];
 
 export default function Debts() {
-  const token = useAuthStore((s) => s.token);
+  const { isSignedIn, isLoaded } = useAuth();
+  const canLoad = isLoaded && isSignedIn;
   const currency = useAuthStore((s) => s.user?.currency) || "INR";
   const dark = useThemeStore((s) => s.mode === "dark");
   const [list, setList] = useState([]);
@@ -61,9 +63,9 @@ export default function Debts() {
         color: "#0f172a",
       };
 
-  /** Load list + analyzer after mutations (token guaranteed). */
+  /** Load list + analyzer after mutations (Clerk session ready). */
   async function refreshDebtsPage() {
-    if (!token) return;
+    if (!canLoad) return;
     try {
       const d = await api.debts.list(q ? { q } : {});
       setList(d);
@@ -84,7 +86,7 @@ export default function Debts() {
   }
 
   useEffect(() => {
-    if (!token) {
+    if (!canLoad) {
       setList([]);
       setSummary(null);
       return;
@@ -96,11 +98,11 @@ export default function Debts() {
         .catch((e) => toast.error(e.message));
     }, 250);
     return () => clearTimeout(timer);
-  }, [token, q]);
+  }, [canLoad, q]);
 
-  /* Analyzer must run after auth token exists (zustand persist rehydrates async). */
+  /* Summary after Clerk session is ready. */
   useEffect(() => {
-    if (!token) {
+    if (!canLoad) {
       setSummary(null);
       return;
     }
@@ -121,7 +123,7 @@ export default function Debts() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [canLoad]);
 
   async function submit(e) {
     e.preventDefault();

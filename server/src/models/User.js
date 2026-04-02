@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, select: false },
     currency: { type: String, default: "INR" },
     googleId: { type: String, sparse: true },
+    clerkId: { type: String, sparse: true, unique: true },
     picture: { type: String },
     passwordResetToken: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },

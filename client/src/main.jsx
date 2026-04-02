@@ -1,16 +1,24 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import { GoogleOAuthProvider } from "@react-oauth/google";
+import { ClerkProvider } from "@clerk/clerk-react";
 import { Toaster } from "react-hot-toast";
 import App from "./App.jsx";
 import ThemeSync from "./components/ThemeSync.jsx";
+import ClerkTokenBridge from "./components/ClerkTokenBridge.jsx";
+import VelaroAuthSync from "./components/VelaroAuthSync.jsx";
 import "./index.css";
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const clerkPk = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || "";
 
 const appTree = (
   <BrowserRouter>
+    {clerkPk ? (
+      <>
+        <ClerkTokenBridge />
+        <VelaroAuthSync />
+      </>
+    ) : null}
     <ThemeSync />
     <App />
     <Toaster
@@ -25,10 +33,6 @@ const appTree = (
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    {googleClientId ? (
-      <GoogleOAuthProvider clientId={googleClientId}>{appTree}</GoogleOAuthProvider>
-    ) : (
-      appTree
-    )}
+    {clerkPk ? <ClerkProvider publishableKey={clerkPk}>{appTree}</ClerkProvider> : appTree}
   </React.StrictMode>
 );

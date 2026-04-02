@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { UserProfile } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../store/authStore.js";
@@ -11,18 +12,12 @@ export default function Settings() {
   const updateUser = useAuthStore((s) => s.updateUser);
   const themeMode = useThemeStore((s) => s.mode);
   const toggleTheme = useThemeStore((s) => s.toggle);
-  const nav = useNavigate();
-
   const [name, setName] = useState(user?.name || "");
   const [nameSaving, setNameSaving] = useState(false);
 
   useEffect(() => {
     setName(user?.name || "");
   }, [user?.name]);
-  const [currentPw, setCurrentPw] = useState("");
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-  const [pwSaving, setPwSaving] = useState(false);
 
   async function saveName(e) {
     e.preventDefault();
@@ -65,7 +60,7 @@ export default function Settings() {
       <div>
         <h1 className="font-display text-3xl font-semibold">Profile & settings</h1>
         <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
-          Your account, appearance, password, and data export.
+          Display name, currency, appearance, Clerk account security, and data export.
         </p>
       </div>
 
@@ -156,73 +151,14 @@ export default function Settings() {
         transition={{ delay: 0.05 }}
         className="glass-panel p-6 space-y-4"
       >
-        <h2 className="font-medium">Password & sign-in</h2>
+        <h2 className="font-medium">Account & security</h2>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Change your password here while signed in. If you forgot it, use email reset (needs SMTP on
-          the server for production).
+          Email, password, sessions, and social logins are managed by Clerk. You can also use the
+          avatar menu in the top bar.
         </p>
-        <form onSubmit={changePassword} className="space-y-3 max-w-md">
-          <div>
-            <label className="text-xs text-slate-500 block mb-1">Current password</label>
-            <input
-              type="password"
-              autoComplete="current-password"
-              className="w-full rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm text-slate-900 dark:text-slate-100 shadow-sm"
-              value={currentPw}
-              onChange={(e) => setCurrentPw(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label className="text-xs text-slate-500 block mb-1">New password</label>
-            <input
-              type="password"
-              autoComplete="new-password"
-              className="w-full rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm text-slate-900 dark:text-slate-100 shadow-sm"
-              value={newPw}
-              onChange={(e) => setNewPw(e.target.value)}
-              required
-              minLength={6}
-            />
-          </div>
-          <div>
-            <label className="text-xs text-slate-500 block mb-1">Confirm new password</label>
-            <input
-              type="password"
-              autoComplete="new-password"
-              className="w-full rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm text-slate-900 dark:text-slate-100 shadow-sm"
-              value={confirmPw}
-              onChange={(e) => setConfirmPw(e.target.value)}
-              required
-              minLength={6}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={pwSaving}
-            className="px-4 py-2 rounded-xl bg-sky-600 text-white text-sm font-medium disabled:opacity-50"
-          >
-            {pwSaving ? "Updating…" : "Update password"}
-          </button>
-        </form>
-        <div className="pt-2 border-t border-slate-200 dark:border-slate-600">
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
-            Prefer a reset link by email?
-          </p>
-          <button
-            type="button"
-            className="text-sm text-accent-sky hover:underline"
-            onClick={() =>
-              nav("/forgot-password", { state: { email: user?.email || "" } })
-            }
-          >
-            Open forgot-password (uses your account email)
-          </button>
+        <div className="flex justify-center overflow-x-auto">
+          <UserProfile routing="hash" appearance={{ elements: { rootBox: "w-full max-w-full" } }} />
         </div>
-        <p className="text-xs text-slate-500 dark:text-slate-500">
-          After resetting via email, use the link on the reset page. Your current session stays valid
-          until you sign out.
-        </p>
       </motion.div>
 
       <motion.div
@@ -257,27 +193,9 @@ export default function Settings() {
         </button>
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.08 }}
-        className="glass-panel p-6 space-y-3"
-      >
-        <h2 className="font-medium">Google sign-in</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          {import.meta.env.VITE_GOOGLE_CLIENT_ID
-            ? "You can use “Continue with Google” on the login or register page. The same Google account can be linked to this email if you already registered with a password."
-            : "Set VITE_GOOGLE_CLIENT_ID on the frontend and GOOGLE_CLIENT_ID on the API (same Web client ID from Google Cloud Console) to enable the Google button."}
-        </p>
-      </motion.div>
-
       <p className="text-center text-sm text-slate-500">
         <Link to="/login" className="text-accent-sky hover:underline">
           Sign-in page
-        </Link>{" "}
-        ·{" "}
-        <Link to="/forgot-password" className="text-accent-sky hover:underline" state={{ email: user?.email }}>
-          Forgot password
         </Link>
       </p>
     </div>

@@ -1,8 +1,6 @@
 import { logger } from "../middleware/logger.js";
 import { isMailConfigured } from "./mail.js";
 
-const WEAK = new Set(["change-me", "change-me-to-a-long-random-string", "dev-only-change-in-production"]);
-
 export function assertProductionConfig() {
   if (process.env.NODE_ENV !== "production") return;
 
@@ -11,9 +9,8 @@ export function assertProductionConfig() {
     process.exit(1);
   }
 
-  const secret = process.env.JWT_SECRET;
-  if (!secret || secret.length < 32 || WEAK.has(secret.trim().toLowerCase())) {
-    logger.fatal("JWT_SECRET must be set to a random string of at least 32 characters in production");
+  if (!process.env.CLERK_SECRET_KEY?.trim()) {
+    logger.fatal("CLERK_SECRET_KEY is required in production (Clerk authentication)");
     process.exit(1);
   }
 

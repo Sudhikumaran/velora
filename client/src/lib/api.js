@@ -1,10 +1,10 @@
-import { useAuthStore } from "../store/authStore.js";
+import { getClerkBearerToken } from "./clerkToken.js";
 
 const raw = import.meta.env.VITE_API_BASE_URL;
 const base = typeof raw === "string" ? raw.replace(/\/$/, "") : "";
 
 async function request(path, options = {}) {
-  const token = useAuthStore.getState().token;
+  const token = await getClerkBearerToken();
   const headers = {
     "Content-Type": "application/json",
     ...options.headers,
@@ -28,17 +28,13 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  auth: {
-    register: (body) =>
-      request("/api/auth/register", { method: "POST", body: JSON.stringify(body) }),
-    login: (body) =>
-      request("/api/auth/login", { method: "POST", body: JSON.stringify(body) }),
-    forgotPassword: (body) =>
-      request("/api/auth/forgot-password", { method: "POST", body: JSON.stringify(body) }),
-    resetPassword: (body) =>
-      request("/api/auth/reset-password", { method: "POST", body: JSON.stringify(body) }),
-    google: (body) =>
-      request("/api/auth/google", { method: "POST", body: JSON.stringify(body) }),
+  user: {
+    me: () => request("/api/user/me"),
+    patchMe: (body) =>
+      request("/api/user/me", { method: "PATCH", body: JSON.stringify(body) }),
+    changePassword: (body) =>
+      request("/api/user/me/password", { method: "POST", body: JSON.stringify(body) }),
+    exportData: () => request("/api/user/export"),
   },
   accounts: {
     list: () => request("/api/accounts"),
@@ -134,13 +130,6 @@ export const api = {
       const q = new URLSearchParams(params || {}).toString();
       return request(`/api/analytics/budget-status${q ? `?${q}` : ""}`);
     },
-  },
-  user: {
-    patchMe: (body) =>
-      request("/api/user/me", { method: "PATCH", body: JSON.stringify(body) }),
-    changePassword: (body) =>
-      request("/api/user/me/password", { method: "POST", body: JSON.stringify(body) }),
-    exportData: () => request("/api/user/export"),
   },
   goals: {
     list: () => request("/api/goals"),

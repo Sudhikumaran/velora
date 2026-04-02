@@ -3,10 +3,10 @@ import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import { clerkMiddleware } from "@clerk/express";
 import { httpLogger, logger } from "./middleware/logger.js";
-import { apiLimiter, authLimiter } from "./middleware/rateLimit.js";
+import { apiLimiter } from "./middleware/rateLimit.js";
 import { assertProductionConfig } from "./lib/assertConfig.js";
-import authRoutes from "./routes/auth.js";
 import accountRoutes from "./routes/accounts.js";
 import transactionRoutes from "./routes/transactions.js";
 import debtRoutes from "./routes/debts.js";
@@ -67,6 +67,7 @@ app.use(
   })
 );
 app.use(express.json({ limit: "2mb" }));
+app.use(clerkMiddleware());
 
 app.get("/", (_req, res) => {
   res.json({
@@ -76,7 +77,6 @@ app.get("/", (_req, res) => {
   });
 });
 
-app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api", apiLimiter);
 
 app.use("/api/accounts", accountRoutes);

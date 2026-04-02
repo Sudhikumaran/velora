@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import { UserButton } from "@clerk/clerk-react";
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/authStore.js";
 import { useThemeStore } from "../store/themeStore.js";
 import { api } from "../lib/api.js";
 import { formatMoney } from "../lib/format.js";
-import toast from "react-hot-toast";
 
 export default function TopBar({ onMenu }) {
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
   const dark = useThemeStore((s) => s.mode === "dark");
   const [notifs, setNotifs] = useState([]);
 
@@ -93,7 +92,7 @@ export default function TopBar({ onMenu }) {
             Welcome back
           </p>
           <p className={`font-display font-semibold text-lg truncate ${title}`}>
-            {user?.name}
+            {user?.name || "—"}
           </p>
         </div>
       </div>
@@ -147,16 +146,7 @@ export default function TopBar({ onMenu }) {
         >
           Profile
         </Link>
-        <button
-          type="button"
-          onClick={() => {
-            logout();
-            toast.success("Signed out");
-          }}
-          className={`text-sm px-4 py-2 rounded-xl border shadow-sm font-medium ${iconBtn}`}
-        >
-          Sign out
-        </button>
+        <UserButton afterSignOutUrl="/login" />
       </div>
     </header>
   );
