@@ -22,6 +22,7 @@ import { useThemeStore } from "../store/themeStore.js";
 const PIE_COLORS = ["#fb7185", "#34d399"];
 
 export default function Debts() {
+  const token = useAuthStore((s) => s.token);
   const currency = useAuthStore((s) => s.user?.currency) || "INR";
   const dark = useThemeStore((s) => s.mode === "dark");
   const [list, setList] = useState([]);
@@ -60,16 +61,15 @@ export default function Debts() {
         color: "#0f172a",
       };
 
-  async function loadList() {
+  /** Load list + analyzer after mutations (token guaranteed). */
+  async function refreshDebtsPage() {
+    if (!token) return;
     try {
       const d = await api.debts.list(q ? { q } : {});
       setList(d);
     } catch (e) {
       toast.error(e.message);
     }
-  }
-
-  async function loadAnalyzer() {
     try {
       const s = await api.debts.summary();
       setSummary(s);
@@ -83,19 +83,45 @@ export default function Debts() {
     }
   }
 
-  function load() {
-    loadList();
-    loadAnalyzer();
-  }
-
   useEffect(() => {
-    const t = setTimeout(loadList, 250);
-    return () => clearTimeout(t);
-  }, [q]);
+    if (!token) {
+      setList([]);
+      setSummary(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      api.debts
+        .list(q ? { q } : {})
+        .then(setList)
+        .catch((e) => toast.error(e.message));
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [token, q]);
 
+  /* Analyzer must run after auth token exists (zustand persist rehydrates async). */
   useEffect(() => {
-    loadAnalyzer();
-  }, []);
+    if (!token) {
+      setSummary(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const s = await api.debts.summary();
+        if (!cancelled) setSummary(s);
+      } catch {
+        try {
+          const all = await api.debts.list({});
+          if (!cancelled) setSummary(buildDebtSummary(all));
+        } catch {
+          if (!cancelled) setSummary(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   async function submit(e) {
     e.preventDefault();
@@ -118,7 +144,7 @@ export default function Debts() {
         toast.success("Added");
       }
       setModal(null);
-      load();
+      refreshDebtsPage();
     } catch (err) {
       toast.error(err.message);
     }
@@ -127,7 +153,7 @@ export default function Debts() {
   async function markPaid(id) {
     try {
       await api.debts.update(id, { status: "paid", amount: 0 });
-      load();
+      refreshDebtsPage();
       toast.success("Marked paid");
     } catch (e) {
       toast.error(e.message);
@@ -141,7 +167,7 @@ export default function Debts() {
       toast.success("Payment recorded");
       setPayModal(null);
       setPayAmt("");
-      load();
+      refreshDebtsPage();
     } catch (e) {
       toast.error(e.message);
     }
@@ -151,7 +177,7 @@ export default function Debts() {
     if (!confirm("Delete debt record?")) return;
     try {
       await api.debts.remove(id);
-      load();
+      refreshDebtsPage();
     } catch (e) {
       toast.error(e.message);
     }
