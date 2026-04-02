@@ -50,6 +50,14 @@ app.use(
 );
 app.use(express.json({ limit: "2mb" }));
 
+app.get("/", (_req, res) => {
+  res.json({
+    ok: true,
+    name: "Velaro API",
+    health: "/api/health",
+  });
+});
+
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api", apiLimiter);
 
