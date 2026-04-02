@@ -14,6 +14,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { api } from "../lib/api.js";
+import { buildDebtSummary } from "../lib/debtSummary.js";
 import { formatMoney, formatDateDMY } from "../lib/format.js";
 import { useAuthStore } from "../store/authStore.js";
 import { useThemeStore } from "../store/themeStore.js";
@@ -59,23 +60,42 @@ export default function Debts() {
         color: "#0f172a",
       };
 
-  async function load() {
+  async function loadList() {
     try {
-      const [d, s] = await Promise.all([
-        api.debts.list(q ? { q } : {}),
-        api.debts.summary(),
-      ]);
+      const d = await api.debts.list(q ? { q } : {});
       setList(d);
-      setSummary(s);
     } catch (e) {
       toast.error(e.message);
     }
   }
 
+  async function loadAnalyzer() {
+    try {
+      const s = await api.debts.summary();
+      setSummary(s);
+    } catch {
+      try {
+        const all = await api.debts.list({});
+        setSummary(buildDebtSummary(all));
+      } catch {
+        setSummary(null);
+      }
+    }
+  }
+
+  function load() {
+    loadList();
+    loadAnalyzer();
+  }
+
   useEffect(() => {
-    const t = setTimeout(load, 250);
+    const t = setTimeout(loadList, 250);
     return () => clearTimeout(t);
   }, [q]);
+
+  useEffect(() => {
+    loadAnalyzer();
+  }, []);
 
   async function submit(e) {
     e.preventDefault();
@@ -142,7 +162,7 @@ export default function Debts() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-semibold">Debts</h1>
-          <p className="text-slate-600 text-sm mt-1">
+          <p className={`text-sm mt-1 ${sub}`}>
             Money to receive and money you owe — with partial payments and history.
           </p>
         </div>
