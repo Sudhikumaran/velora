@@ -1,13 +1,30 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import { api } from "../lib/api.js";
 import { formatMoney, formatDateDMY } from "../lib/format.js";
 import { useAuthStore } from "../store/authStore.js";
+import { useThemeStore } from "../store/themeStore.js";
+
+const PIE_COLORS = ["#fb7185", "#34d399"];
 
 export default function Debts() {
   const currency = useAuthStore((s) => s.user?.currency) || "INR";
+  const dark = useThemeStore((s) => s.mode === "dark");
   const [list, setList] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [q, setQ] = useState("");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({
@@ -19,10 +36,37 @@ export default function Debts() {
   const [payModal, setPayModal] = useState(null);
   const [payAmt, setPayAmt] = useState("");
 
+  const panel =
+    "rounded-2xl border backdrop-blur-xl " +
+    (dark
+      ? "border-slate-600/90 bg-slate-900/95 text-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.35)] [color-scheme:dark]"
+      : "border-slate-200/90 bg-white/95 text-slate-900 shadow-[0_4px_24px_rgba(15,23,42,0.06)] [color-scheme:light]");
+  const strong = dark ? "text-white" : "text-slate-950";
+  const sub = dark ? "text-slate-300" : "text-slate-600";
+  const muted = dark ? "text-slate-400" : "text-slate-500";
+  const axisStroke = dark ? "#94a3b8" : "#64748b";
+  const tooltipStyle = dark
+    ? {
+        background: "#1e293b",
+        border: "1px solid #475569",
+        borderRadius: 12,
+        color: "#f1f5f9",
+      }
+    : {
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+        borderRadius: 12,
+        color: "#0f172a",
+      };
+
   async function load() {
     try {
-      const d = await api.debts.list(q ? { q } : {});
+      const [d, s] = await Promise.all([
+        api.debts.list(q ? { q } : {}),
+        api.debts.summary(),
+      ]);
       setList(d);
+      setSummary(s);
     } catch (e) {
       toast.error(e.message);
     }
@@ -119,11 +163,142 @@ export default function Debts() {
         </button>
       </div>
 
+      {summary && (
+        <div className="space-y-4">
+          <div>
+            <h2 className={`font-display text-lg font-semibold ${strong}`}>Debt analyzer</h2>
+            <p className={`text-sm mt-0.5 ${sub}`}>
+              Totals across all records — search below only filters the list, not these figures.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className={`${panel} p-4 border-l-4 border-l-rose-400`}>
+              <p className={`text-xs font-medium uppercase tracking-wide ${muted}`}>You owe (pending)</p>
+              <p className={`font-display text-2xl font-semibold mt-1 ${strong}`}>
+                {formatMoney(summary.pendingYouOwe, currency)}
+              </p>
+            </div>
+            <div className={`${panel} p-4 border-l-4 border-l-emerald-400`}>
+              <p className={`text-xs font-medium uppercase tracking-wide ${muted}`}>Owed to you (pending)</p>
+              <p className={`font-display text-2xl font-semibold mt-1 ${strong}`}>
+                {formatMoney(summary.pendingToReceive, currency)}
+              </p>
+            </div>
+            <div
+              className={`${panel} p-4 border-l-4 ${
+                summary.netPosition >= 0 ? "border-l-sky-400" : "border-l-amber-400"
+              }`}
+            >
+              <p className={`text-xs font-medium uppercase tracking-wide ${muted}`}>Net position</p>
+              <p className={`font-display text-2xl font-semibold mt-1 ${strong}`}>
+                {summary.netPosition >= 0 ? "+" : ""}
+                {formatMoney(summary.netPosition, currency)}
+              </p>
+              <p className={`text-xs mt-1 ${muted}`}>
+                Owed to you minus you owe — positive means others owe you more overall.
+              </p>
+            </div>
+            <div className={`${panel} p-4 border-l-4 border-l-violet-400`}>
+              <p className={`text-xs font-medium uppercase tracking-wide ${muted}`}>Activity</p>
+              <p className={`text-sm mt-2 space-y-1 ${sub}`}>
+                <span className="block">
+                  <span className={strong}>{summary.pendingCount}</span> pending ·{" "}
+                  <span className={strong}>{summary.paidCount}</span> settled
+                </span>
+                <span className={`block text-xs ${muted}`}>
+                  {summary.totalRecords} total lines ·{" "}
+                  {formatMoney(summary.totalPartialPaymentsRecorded, currency)} in partial payments recorded
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            <div className={`${panel} p-5`}>
+              <h3 className={`text-sm font-semibold mb-3 ${strong}`}>Pending split</h3>
+              {summary.piePending.some((x) => x.value > 0) ? (
+                <div className="h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={summary.piePending.filter((x) => x.value > 0)}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={52}
+                        outerRadius={80}
+                        paddingAngle={2}
+                      >
+                        {summary.piePending
+                          .filter((x) => x.value > 0)
+                          .map((_, i) => (
+                            <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                          ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(v) => formatMoney(Number(v), currency)}
+                        contentStyle={tooltipStyle}
+                      />
+                      <Legend
+                        wrapperStyle={{ paddingTop: 8, fontSize: 12, color: dark ? "#cbd5e1" : "#475569" }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className={`text-sm ${muted}`}>No pending balances — add debts or all are paid.</p>
+              )}
+            </div>
+            <div className={`${panel} p-5`}>
+              <h3 className={`text-sm font-semibold mb-3 ${strong}`}>Largest pending balances by person</h3>
+              {summary.topParties?.length ? (
+                <div className="h-[260px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={summary.topParties.map((p) => ({
+                        name:
+                          p.personName.length > 14
+                            ? `${p.personName.slice(0, 14)}…`
+                            : p.personName,
+                        owe: p.youOwe,
+                        receive: p.toReceive,
+                      }))}
+                      margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                    >
+                      <XAxis dataKey="name" tick={{ fill: axisStroke, fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={60} />
+                      <YAxis tick={{ fill: axisStroke, fontSize: 11 }} tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v)} />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        formatter={(v, name) => [formatMoney(Number(v), currency), name === "owe" ? "You owe" : "Owed to you"]}
+                      />
+                      <Legend
+                        wrapperStyle={{ fontSize: 12, color: dark ? "#cbd5e1" : "#475569" }}
+                        formatter={(v) => (v === "owe" ? "You owe" : "Owed to you")}
+                      />
+                      <Bar dataKey="owe" stackId="a" fill="#fb7185" name="owe" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="receive" stackId="a" fill="#34d399" name="receive" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className={`text-sm ${muted}`}>No pending per-person totals yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <input
         placeholder="Search person…"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        className="w-full max-w-md rounded-xl bg-white border border-slate-200 px-4 py-2 text-sm text-slate-900 shadow-sm"
+        className={
+          "w-full max-w-md rounded-xl border px-4 py-2 text-sm shadow-sm " +
+          (dark
+            ? "bg-slate-800/90 border-slate-600 text-slate-100 placeholder:text-slate-500"
+            : "bg-white border-slate-200 text-slate-900")
+        }
       />
 
       <div className="grid md:grid-cols-2 gap-4">

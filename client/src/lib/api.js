@@ -70,6 +70,7 @@ export const api = {
       }),
   },
   debts: {
+    summary: () => request("/api/debts/summary"),
     list: (params) => {
       const q = new URLSearchParams(params || {}).toString();
       return request(`/api/debts${q ? `?${q}` : ""}`);
