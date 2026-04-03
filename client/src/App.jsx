@@ -22,8 +22,9 @@ function ClerkMissing() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6 text-center">
       <p className="text-slate-600 dark:text-slate-300 max-w-md">
-        Set <code className="text-sm bg-slate-100 dark:bg-slate-800 px-1 rounded">VITE_CLERK_PUBLISHABLE_KEY</code> in{" "}
-        <code className="text-sm">client/.env</code> (from Clerk Dashboard → API Keys).
+        Set <code className="text-sm bg-slate-100 dark:bg-slate-800 px-1 rounded">VITE_CLERK_PUBLISHABLE_KEY</code> or{" "}
+        <code className="text-sm bg-slate-100 dark:bg-slate-800 px-1 rounded">NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code> in{" "}
+        <code className="text-sm">client/.env</code> or your host env (Clerk Dashboard → API Keys).
       </p>
     </div>
   );
