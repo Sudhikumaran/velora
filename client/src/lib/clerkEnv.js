@@ -1,8 +1,9 @@
 /**
- * Publishable key is inlined at build time. Vite: VITE_CLERK_PUBLISHABLE_KEY (preferred),
- * or NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY if you copied Clerk’s Next.js env names.
- * Never put CLERK_SECRET_KEY in the client; it belongs only on the server.
+ * Publishable key is set at build time (see vite.config.js define + loadEnv + process.env).
+ * Configure VITE_CLERK_PUBLISHABLE_KEY or NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY on the host.
+ * Never put CLERK_SECRET_KEY in the client.
  */
+/* global __VELARO_CLERK_PUBLISHABLE_KEY__ */
 function normalizePublishableKey(raw) {
   let s = String(raw ?? "").trim();
   if (
@@ -14,10 +15,13 @@ function normalizePublishableKey(raw) {
   return s;
 }
 
-const rawPublishableKey =
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
-  import.meta.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const fromDefine = normalizePublishableKey(__VELARO_CLERK_PUBLISHABLE_KEY__);
 
-export const CLERK_PUBLISHABLE_KEY = normalizePublishableKey(rawPublishableKey);
+const fromImportMeta = normalizePublishableKey(
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
+    import.meta.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+);
+
+export const CLERK_PUBLISHABLE_KEY = fromDefine || fromImportMeta;
 
 export const hasClerkPublishableKey = Boolean(CLERK_PUBLISHABLE_KEY);
