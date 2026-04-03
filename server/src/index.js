@@ -28,7 +28,20 @@ const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 const HOST = process.env.HOST || "0.0.0.0";
 
-if (process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY === "true") {
+// express-rate-limit v8+ throws (→ 500 on /api) if X-Forwarded-For is set but trust proxy is off.
+// Railway, Render, Fly, and Heroku sit behind a proxy that sends that header.
+const trustProxyExplicitOff =
+  process.env.TRUST_PROXY === "0" || process.env.TRUST_PROXY === "false";
+const trustProxyExplicitOn =
+  process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY === "true";
+const trustProxyLikelyPaaS = Boolean(
+  process.env.RAILWAY_ENVIRONMENT ||
+    process.env.RAILWAY_PROJECT_ID ||
+    process.env.RENDER ||
+    process.env.FLY_APP_NAME ||
+    process.env.DYNO
+);
+if (!trustProxyExplicitOff && (trustProxyExplicitOn || trustProxyLikelyPaaS)) {
   app.set("trust proxy", 1);
 }
 
