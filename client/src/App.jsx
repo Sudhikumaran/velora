@@ -16,6 +16,7 @@ import Income from "./pages/Income.jsx";
 import Settings from "./pages/Settings.jsx";
 import Goals from "./pages/Goals.jsx";
 import Calendar from "./pages/Calendar.jsx";
+import { hasClerkPublishableKey } from "./lib/clerkEnv.js";
 
 function ClerkMissing() {
   return (
@@ -70,7 +71,7 @@ function AppRoutes() {
 }
 
 export default function App() {
-  if (!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) {
+  if (!hasClerkPublishableKey) {
     return <ClerkMissing />;
   }
   return <AppRoutes />;

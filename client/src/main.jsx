@@ -8,8 +8,7 @@ import ThemeSync from "./components/ThemeSync.jsx";
 import ClerkTokenBridge from "./components/ClerkTokenBridge.jsx";
 import VelaroAuthSync from "./components/VelaroAuthSync.jsx";
 import "./index.css";
-
-const clerkPk = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || "";
+import { CLERK_PUBLISHABLE_KEY as clerkPk } from "./lib/clerkEnv.js";
 
 const appTree = (
   <BrowserRouter>
